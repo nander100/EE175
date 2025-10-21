@@ -3,6 +3,7 @@ import numpy as np
 import cv2
 import mediapipe as mp
 
+
 # Initialize MediaPipe Hands
 mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
