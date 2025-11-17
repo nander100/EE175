@@ -9,8 +9,8 @@ from pymongo import MongoClient
 import datetime
 import os
 import sys
-import threading  # New import
-import queue      # New import
+import threading 
+import queue 
 
 '''
 HAND LANDMARK INDEXES
@@ -20,13 +20,10 @@ Wrist: 0, Thumb: 1-4, Index: 5-8, Middle: 9-12, Ring: 13-16, Pinky: 17-20
 class CameraControls(Node):
     def __init__(self):
         super().__init__('hand_tracking_node')
-        
-        # --- Thread-Safe Queue for DB ---
-        # This is the "box" to pass data between threads
         self.data_queue = queue.Queue(maxsize=100)
         self.db_thread_running = True
         
-        # --- MongoDB Connection ---
+        # mongoDB connection
         self.mongo_client = None
         self.collection = None
         try:
@@ -34,14 +31,12 @@ class CameraControls(Node):
             if not connection_string:
                 self.get_logger().error("DB_URI environment variable not set. Shutting down.")
                 raise ValueError("DB_URI not set")
-
-            # Connect (this will be used by the new thread)
             self.mongo_client = MongoClient(connection_string, serverSelectionTimeoutMS=5000)
             self.mongo_client.admin.command('ping')
             self.db = self.mongo_client['hand_tracking_db']
             self.collection = self.db['hand_movements']
             
-            # --- Start the Database Writer Thread ---
+            # Start the Database Writer Thread
             self.db_thread = threading.Thread(target=self.db_writer_worker, daemon=True)
             self.db_thread.start()
             self.get_logger().info("Successfully connected to MongoDB and started writer thread.")
@@ -79,9 +74,9 @@ class CameraControls(Node):
     
     def db_writer_worker(self):
         """
-        This function runs in a separate thread.
-        It waits for data to appear in the queue and uploads it to Mongo.
-        This loop is "slow" and doesn't block the main timer_callback.
+        This function runs in a separate thread. 
+        It waits for data to appear in the queue and uploads it to Mongo. 
+        This loop is "slow" and doesn't block the main timer_callback. 
         """
         while self.db_thread_running:
             try:
@@ -131,11 +126,7 @@ class CameraControls(Node):
             bend = self.get_finger_bend_calc(hand_landmarks)
             rotation = self.get_wrist_rotation_calc(hand_landmarks)
             position = self.get_hand_position_calc(hand_landmarks, depth_frame, color_image.shape)
-            
-            # --- Publish to ROS ---
-            # (Your publishing code here...)
-
-            # --- Log and ADD TO QUEUE (not database) ---
+        
             if bend is not None and rotation is not None and position is not None:
                 self.get_logger().info(
                     f"Bend: {bend:.1f}%, Rot: {rotation:.1f}°, Pos: [{position[0][0]:.3f}, {position[1][0]:.3f}, {position[2][0]:.3f}]"
@@ -152,20 +143,15 @@ class CameraControls(Node):
                     }
                 }
                 
-                # --- This is the new, non-blocking part ---
                 try:
                     self.data_queue.put_nowait(hand_data_doc)
                 except queue.Full:
-                    # Queue is full, just drop the data
                     self.get_logger().warn("Data queue is full. Dropping frame.")
 
         except RuntimeError as e:
             self.get_logger().error(f"RealSense runtime error: {e}")
         except Exception as e:
             self.get_logger().error(f"Error in timer callback: {e}")
-    
-
-    # --- Calculation Functions (Unchanged) ---
     
     def get_finger_bend_calc(self, hand_landmarks):
         try:
@@ -233,7 +219,7 @@ class CameraControls(Node):
         print("Stopping DB writer thread...")
         self.db_thread_running = False
         if hasattr(self, 'db_thread'):
-            self.db_thread.join(timeout=2.0) # Wait for thread to exit
+            self.db_thread.join(timeout=2.0)
         
         if self.mongo_client:
             print("Closing MongoDB connection...")
@@ -254,7 +240,7 @@ def main(args=None):
         print(f"Failed to initialize node: {e}")
     finally:
         if camera_node:
-            camera_node.stop_node() # Use our custom shutdown
+            camera_node.stop_node()
         rclpy.shutdown()
 
 if __name__ == "__main__":

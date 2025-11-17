@@ -2,37 +2,25 @@ version: '3.8'
 
 services:
   ros2:
-    image: osrf/ros:humble-desktop-full
-    container_name: ros2_dev
-    privileged: true  # Full device access
-    network_mode: host  # Direct network access for ROS communication
+    container_name: ros_dev
+    network_mode: host
     stdin_open: true
     tty: true
+    privileged: true
+    build: .
     environment:
       - DISPLAY=${DISPLAY}
       - DB_URI=${MONGO_CONNECTION_STRING}
       - QT_X11_NO_MITSHM=1
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=all
     volumes:
-      # X11 for GUI
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
-      # Your workspace
-      - ./ros2_ws:/ros2_ws:rw
-      # Device access
-      - /dev:/dev:rw
-      # USB devices (cameras, LIDAR, etc.)
-      - /dev/bus/usb:/dev/bus/usb:rw
-      # Shared memory for large messages
+      - ./ros_ws:/ros_ws:rw
       - /dev/shm:/dev/shm:rw
     devices:
-      - /dev/dri:/dev/dri  # GPU
-      - /dev/video0:/dev/video0  # Webcam (adjust as needed)
+      - /dev/nvidia0:/dev/nvidia0
+      - /dev/nvidiactl:/dev/nvidiactl
+      - /dev/nvidia-uvm:/dev/nvidia-uvm
+      - /dev/dri:/dev/dri
+      - /dev/video0:/dev/video0
+      - /dev/bus/usb:/dev/bus/usb 
     command: bash
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]

@@ -7,12 +7,14 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Set up workspace
-WORKDIR /ros2_ws
-COPY . /ros2_ws/src
+WORKDIR /ros_ws
+COPY . /ros_ws/src
 
 # Build workspace
 RUN . /opt/ros/humble/setup.sh && \
     colcon build
 
+RUN pip install pyrealsense2 mediapipe pymongo
+
 # Source workspace on container start
-RUN echo "source /ros2_ws/install/setup.bash" >> ~/.bashrc
+RUN echo "source /ros_ws/install/setup.bash" >> ~/.bashrc
